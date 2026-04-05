@@ -1,0 +1,207 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm]{geometry}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt plus 1pt}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern,microtype}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.5pt}
+\lhead{\small CS5800 -- Algorithms}
+\rhead{\small Group Seminar -- Homework}
+\cfoot{\small\thepage}
+
+\begin{document}
+
+\begin{center}
+{\Large\bfseries Random Forest -- Homework}
+\end{center}
+
+\bigskip
+
+\textbf{Problem 1.}
+Below is a dataset of 8 students. We recorded whether they passed an exam based on three features.
+
+\begin{center}
+\begin{tabular}{c|ccc|c}
+\# & Hours Studied & Attended Review & Slept 7h+ & Passed? \\
+\hline
+1 & 10 & Yes & Yes & Y \\
+2 & 3  & No  & Yes & N \\
+3 & 8  & Yes & No  & Y \\
+4 & 2  & No  & No  & N \\
+5 & 9  & Yes & Yes & Y \\
+6 & 4  & No  & Yes & N \\
+7 & 7  & Yes & No  & N \\
+8 & 3  & No  & No  & N \\
+\end{tabular}
+\end{center}
+
+Build a Random Forest with 2 trees. Each tree sees 2 of 3 features per split.
+
+\begin{enumerate}[label=(\alph*)]
+\item Tree 1 trains on rows $\{1, 1, 3, 4, 5, 5, 7, 8\}$ (sampled with replacement). The two features at the root are ``Attended Review'' and ``Slept 7h+''.
+
+\begin{itemize}
+  \item Which rows did Tree 1 never see?
+  \item Between the two available features, which gives a better split at the root? Show your reasoning by listing what labels end up on each side.
+  \item Draw Tree 1 (first 1--2 levels).
+\end{itemize}
+
+\item Tree 2 trains on rows $\{2, 3, 4, 4, 6, 6, 7, 8\}$, with ``Hours Studied'' and ``Attended Review'' at the root.
+
+\begin{itemize}
+  \item Draw Tree 2 (first 1--2 levels).
+  \item New student: Hours Studied = 9, Attended Review = Yes, Slept 7h+ = No. What does each tree predict? What does the forest predict?
+  \item Use Tree 1's unseen rows from part (a) to estimate its accuracy. Show each prediction.
+\end{itemize}
+\end{enumerate}
+
+\bigskip
+
+\textbf{Problem 2.}
+A Random Forest with 50 trees was trained on a spam detection dataset (6 features, 10{,}000 emails). To measure feature importance, each feature was shuffled independently and the accuracy drop was recorded:
+
+\begin{center}
+\begin{tabular}{l|cc}
+Feature & Original accuracy & After shuffling \\
+\hline
+Contains ``free'' in subject  & 91\% & 72\% \\
+Email length                  & 91\% & 89\% \\
+Number of links               & 91\% & 80\% \\
+Sender in contact list        & 91\% & 83\% \\
+\end{tabular}
+\end{center}
+
+\begin{enumerate}[label=(\alph*)]
+\item Compute the importance of each feature and rank them. Then answer: ``Email length'' has almost no importance globally. Give a concrete scenario where it could still contribute to a correct prediction in some individual tree.
+
+\item Someone claims their single decision tree achieves 99\% accuracy while the Random Forest only achieves 91\%. They conclude the single tree is superior. Identify the flaw in this comparison. In your answer, address:
+\begin{enumerate}[label=(\roman*)]
+  \item what dataset each accuracy is measured on,
+  \item why a deep decision tree can achieve near-perfect training accuracy,
+  \item how out-of-bag accuracy differs from training accuracy.
+\end{enumerate}
+\end{enumerate}
+
+\newpage
+
+\begin{center}
+{\Large\bfseries Solutions}
+\end{center}
+
+\bigskip
+
+\textbf{Problem 1.}
+
+\textbf{(a)} Sampled rows: $\{1, 1, 3, 4, 5, 5, 7, 8\}$. Unique rows present: $\{1, 3, 4, 5, 7, 8\}$.
+
+Unseen rows: $\{2, 6\}$.
+
+The sampled labels are: Y, Y, Y, N, Y, Y, N, N (5Y, 3N).
+
+Split on ``Attended Review'':
+\begin{itemize}
+\item Yes: rows 1, 1, 3, 5, 5, 7 $\to$ Y, Y, Y, Y, Y, N $\to$ 5Y, 1N
+\item No: rows 4, 8 $\to$ N, N $\to$ 0Y, 2N (pure)
+\end{itemize}
+
+Split on ``Slept 7h+'':
+\begin{itemize}
+\item Yes: rows 1, 1, 5, 5 $\to$ Y, Y, Y, Y $\to$ 4Y, 0N (pure)
+\item No: rows 3, 4, 7, 8 $\to$ Y, N, N, N $\to$ 1Y, 3N
+\end{itemize}
+
+Both features separate reasonably well. ``Slept 7h+'' produces one pure side (all Y) and one mostly-N side, so it is slightly better. Splitting on ``Slept 7h+'' first:
+
+\begin{verbatim}
+        Slept 7h+?
+        /        \
+      Yes         No
+       |           |
+      Y       Attended Review?
+               /        \
+             Yes         No
+              |           |
+             Y/N          N
+\end{verbatim}
+
+The No $\to$ Attended Review $\to$ Yes branch contains row 3 (Y) and row 7 (N), so we'd need another split or take majority (predict Y or N depending on which feature is drawn). Reasonable to predict Y (since row 3 appears once and row 7 once, tie-break either way).
+
+\medskip
+\textbf{(b)} Tree 2 rows: $\{2, 3, 4, 4, 6, 6, 7, 8\}$. Labels: N, Y, N, N, N, N, N, N (1Y, 7N).
+
+With ``Hours Studied'' and ``Attended Review'':
+
+Split on ``Attended Review'':
+\begin{itemize}
+\item Yes: rows 3, 7 $\to$ Y, N
+\item No: rows 2, 4, 4, 6, 6, 8 $\to$ all N (pure)
+\end{itemize}
+
+Tree 2:
+\begin{verbatim}
+      Attended Review?
+       /           \
+     Yes            No
+      |              |
+   Hours>=8?         N
+    /     \
+   Y       N
+\end{verbatim}
+
+(Row 3 has Hours=8, Y; row 7 has Hours=7, N. Splitting at 7.5 separates them.)
+
+New student (Hours=9, Attended Review=Yes, Slept 7h+=No):
+\begin{itemize}
+\item Tree 1: Slept 7h+ = No $\to$ Attended Review = Yes $\to$ predict Y.
+\item Tree 2: Attended Review = Yes $\to$ Hours = 9 $\geq$ 8 $\to$ predict Y.
+\item Forest: 2--0 $\to$ \textbf{Y}.
+\end{itemize}
+
+Out-of-bag test for Tree 1 (rows 2 and 6):
+\begin{itemize}
+\item Row 2: Slept 7h+ = Yes $\to$ predict Y. Actual: N. \textbf{Wrong.}
+\item Row 6: Slept 7h+ = Yes $\to$ predict Y. Actual: N. \textbf{Wrong.}
+\end{itemize}
+
+Tree 1 gets 0/2 on its unseen data. This is only two data points so the estimate is noisy, but it shows that this particular tree has a weakness: it predicts Y for everyone who slept well, even if they barely studied. In a full Random Forest, other trees would compensate.
+
+\bigskip
+
+\textbf{Problem 2.}
+
+\textbf{(a)} Importance = accuracy drop after shuffling:
+
+\begin{center}
+\begin{tabular}{l|c}
+Feature & Importance \\
+\hline
+Contains ``free'' in subject & $91 - 72 = 19\%$ \\
+Number of links & $91 - 80 = 11\%$ \\
+Sender in contact list & $91 - 83 = 8\%$ \\
+Email length & $91 - 89 = 2\%$ \\
+\end{tabular}
+\end{center}
+
+Ranking: ``free'' in subject $>$ number of links $>$ sender in contacts $>$ email length.
+
+Email length has low global importance because the other features usually dominate. But consider a tree where ``free in subject'' and ``number of links'' were not selected at a split (due to random feature selection). In that tree, email length might be the only useful signal. For instance, among emails from known contacts with no suspicious keywords, an unusually short email (just a link with no text) could be a sign of a compromised account. In that specific subtree, email length does the heavy lifting.
+
+\medskip
+\textbf{(b)} The comparison is flawed because the two accuracies are measured on different data.
+
+(i) The 99\% is training accuracy --- the tree's performance on the same data it learned from. The 91\% is out-of-bag accuracy --- each tree is tested only on samples it never trained on.
+
+(ii) A sufficiently deep decision tree can create a unique leaf for nearly every training example, achieving near-perfect accuracy on training data. This does not mean it has learned useful patterns; it may have just memorized the training set, including noise.
+
+(iii) Out-of-bag accuracy is computed by predicting each email using only the trees whose training samples did not include that email. This makes it an estimate of performance on unseen data, comparable to cross-validation. Training accuracy has no such holdout mechanism. To make a fair comparison, the single tree should be evaluated on a separate test set. Its accuracy would likely drop well below 99\%, and probably below the forest's 91\%.
+
+\end{document}
